@@ -23,7 +23,7 @@ def get_summary_from_groq(text):
                     "content": f"Please summarize this CV and extract key points: {text}",
                 }
             ],
-            model="deepseek-r1-distill-llama-70b"  # Vérifie que le modèle est correct (nom actualisé possible)
+            model="deepseek-r1-distill-llama-70b"  # Vérification du modèle  (nom correct et actualisé)
         )
         return chat_completion.choices[0].message.content
     except Exception as e:
