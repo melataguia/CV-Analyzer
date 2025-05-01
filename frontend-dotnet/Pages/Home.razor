@@ -1,0 +1,58 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Net.Http.Headers
+@inject HttpClient Http
+
+<h3>Analyseur de CV</h3>
+
+<InputFile OnChange="HandleFileSelected" />
+<br />
+<textarea @bind="jobOfferText" rows="6" cols="60" placeholder="Copiez ici l'offre d'emploi" class="form-control mt-2"></textarea>
+<br />
+<button class="btn btn-primary mt-2" @onclick="Envoyer">Analyser</button>
+
+<p class="mt-3">@resultMessage</p>
+
+@code {
+    private IBrowserFile? file;
+    private string jobOfferText = string.Empty;
+    private string resultMessage = string.Empty;
+
+    private void HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        file = e.File;
+    }
+
+    private async Task Envoyer()
+    {
+        if (file is null || string.IsNullOrWhiteSpace(jobOfferText))
+        {
+            resultMessage = "Veuillez choisir un CV et remplir l'offre d'emploi.";
+            return;
+        }
+
+        try
+        {
+            using var content = new MultipartFormDataContent();
+
+            await using var stream = file.OpenReadStream(maxAllowedSize: 10_000_000);
+            var fileContent = new StreamContent(stream);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+            content.Add(fileContent, "cv", file.Name);
+
+            content.Add(new StringContent(jobOfferText), "job_offer");
+
+            var response = await Http.PostAsync("http://127.0.0.1:5000/parse", content);
+            var responseText = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+                resultMessage = $" Résultat reçu : {responseText}";
+            else
+                resultMessage = $" Erreur {response.StatusCode} : {responseText}";
+        }
+        catch (Exception ex)
+        {
+            resultMessage = $"Erreur lors de l'envoi : {ex.Message}";
+        }
+    }
+}
